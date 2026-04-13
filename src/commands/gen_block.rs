@@ -4,7 +4,7 @@ use crate::{
     ir::IR,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use std::path::PathBuf;
 use std::{collections::HashSet, fs};
@@ -33,7 +33,8 @@ pub fn gen_block(args: GenBlock) -> Result<()> {
         .collect::<HashSet<_>>();
 
     for dependency in dependencies.iter() {
-        let data = fs::read(args.input.with_file_name(dependency).with_extension("yaml"))?;
+        let data = fs::read(args.input.with_file_name(dependency).with_extension("yaml"))
+            .with_context(|| format!("{dependency:?}"))?;
         let sub_ir: IR = serde_yaml::from_slice(&data)?;
         if dependencies.contains(sub_ir.blocks.keys().next().unwrap()) {
             ir.merge(sub_ir);
