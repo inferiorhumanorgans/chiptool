@@ -50,6 +50,7 @@ const USELESS_ZERO_NAMES: &[&str] = &[
     "invalid",
     "no_effect",
     "passthru",
+    "_0",
 ];
 const USELESS_ONE_NAMES: &[&str] = &[
     "en",
@@ -66,6 +67,7 @@ const USELESS_ONE_NAMES: &[&str] = &[
     "valid",
     "set",
     "clr",
+    "_1",
 ];
 
 const NOT_NAMES: &[&str] = &["not", "no", "un", "de", "in"];
