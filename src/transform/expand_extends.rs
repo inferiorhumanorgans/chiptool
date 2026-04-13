@@ -1,7 +1,8 @@
 use anyhow::{bail, Result};
+use convert_case::{Case, Casing};
 use log::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::ir::*;
 
@@ -10,19 +11,45 @@ pub struct ExpandExtends {}
 
 impl ExpandExtends {
     pub fn run(&self, ir: &mut IR) -> anyhow::Result<()> {
+        let mut rename_fs = HashMap::new();
+        let mut rename_enum = HashMap::new();
+
         // Expand blocks
         let deps = ir
             .blocks
             .iter()
             .map(|(k, v)| (k.clone(), v.extends.clone()))
             .collect();
+        let mut pending_removal = HashSet::new();
         for name in topological_sort(deps)? {
-            let block = ir.blocks.get(&name).unwrap();
-            if let Some(parent_name) = &block.extends {
-                let parent = ir.blocks.get(parent_name).unwrap();
+            let extends = ir.blocks.get(&name).unwrap().extends.clone();
+            if let Some(parent_name) = &extends {
+                pending_removal.insert(parent_name.clone());
+                let parent = ir.blocks.get(&parent_name.clone()).unwrap();
 
-                let items = parent.items.clone();
-                let block = ir.blocks.get_mut(&name).unwrap();
+                let items = parent
+                    .items
+                    .iter()
+                    .map(|x| {
+                        let mut item = x.clone();
+                        if let BlockItem {
+                            inner: BlockItemInner::Register(reg),
+                            ..
+                        } = &mut item
+                        {
+                            if let Some(ref mut fieldset) = &mut reg.fieldset {
+                                let parent_mod = parent_name.to_case(Case::Snake);
+                                let cur_mod = name.split("::").next().unwrap();
+                                let new = fieldset.replace(&parent_mod, cur_mod);
+                                rename_fs.insert(fieldset.clone(), new.clone());
+                                *fieldset = new;
+                            }
+                        }
+
+                        item
+                    })
+                    .collect::<Vec<_>>();
+                let block = ir.blocks.get_mut(&name.clone()).unwrap();
 
                 for i in items {
                     if !block.items.iter().any(|j| j.name == i.name) {
@@ -31,18 +58,43 @@ impl ExpandExtends {
                 }
             }
         }
-        // Expand fiedsets
+        for dep in pending_removal {
+            ir.blocks.remove(dep.as_str());
+        }
+
+        // Expand fieldsets
         let deps = ir
             .fieldsets
             .iter()
             .map(|(k, v)| (k.clone(), v.extends.clone()))
             .collect();
+        let mut pending_removal = HashSet::new();
         for name in topological_sort(deps)? {
             let fieldset = ir.fieldsets.get(&name).unwrap();
             if let Some(parent_name) = &fieldset.extends {
-                let parent = ir.fieldsets.get(parent_name).unwrap();
+                pending_removal.insert(parent_name.clone());
+                let parent_fieldset = ir.fieldsets.get(parent_name).unwrap();
 
-                let items = parent.fields.clone();
+                let items = parent_fieldset
+                    .fields
+                    .iter()
+                    .map(|x| {
+                        let parent_mod = parent_name.split("::").next().unwrap();
+                        let cur_mod = name.split("::").next().unwrap();
+
+                        let mut item = x.clone();
+
+                        if let Some(ref mut enumm) = &mut item.enumm {
+                            if enumm.starts_with(parent_mod) {
+                                let new = enumm.replace(parent_mod, cur_mod);
+                                rename_enum.insert(enumm.clone(), new.clone());
+                                *enumm = new;
+                            }
+                        }
+                        item
+                    })
+                    .collect::<Vec<_>>();
+
                 let fieldset = ir.fieldsets.get_mut(&name).unwrap();
 
                 for i in items {
@@ -51,6 +103,19 @@ impl ExpandExtends {
                     }
                 }
             }
+        }
+        for dep in pending_removal {
+            ir.fieldsets.remove(dep.as_str());
+        }
+
+        for (old, new) in rename_fs.into_iter() {
+            let val = ir.fieldsets.remove(&old).unwrap();
+            ir.fieldsets.insert(new, val);
+        }
+
+        for (old, new) in rename_enum.into_iter() {
+            let val = ir.enums.remove(&old).unwrap();
+            ir.enums.insert(new, val);
         }
 
         Ok(())
