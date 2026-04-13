@@ -167,10 +167,10 @@ pub fn render(ir: &IR, opts: &Options) -> Result<TokenStream> {
     );
 
     root.items.extend(quote!(
-        #![allow(non_camel_case_types)]
-        #![allow(non_snake_case)]
-        #![allow(non_upper_case_globals)]
-        #![doc=#doc]
+        // #![allow(non_camel_case_types)]
+        // #![allow(non_snake_case)]
+        // #![allow(non_upper_case_globals)]
+        #[doc=#doc]
     ));
 
     if opts.no_std {
