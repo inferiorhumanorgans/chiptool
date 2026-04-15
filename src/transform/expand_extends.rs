@@ -42,6 +42,15 @@ impl ExpandExtends {
                                 let cur_mod = name.split("::").next().unwrap();
                                 let new = fieldset.replace(&parent_mod, cur_mod);
                                 rename_fs.insert(fieldset.clone(), new.clone());
+                                if let Some(fieldset) = ir.fieldsets.get_mut(fieldset) {
+                                    for field in fieldset.fields.iter_mut() {
+                                        if let Some(enumm) = &field.enumm {
+                                            let new = enumm.replace(&parent_mod, cur_mod);
+                                            rename_enum.insert(enumm.clone(), new.clone());
+                                            field.enumm = Some(new);
+                                        }
+                                    }
+                                }
                                 *fieldset = new;
                             }
                         }

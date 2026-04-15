@@ -22,7 +22,8 @@ impl ModifyFieldsEnum {
                     let matched_enums = match_all(ir.enums.keys().cloned(), &self.enumm);
                     if matched_enums.len() != 1 {
                         anyhow::bail!(
-                            "Expected exactly one enum to match, found {}",
+                            "Expected exactly one enum to match {:?}, found {}",
+                            self.enumm,
                             matched_enums.len()
                         );
                     }
