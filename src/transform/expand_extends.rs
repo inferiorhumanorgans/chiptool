@@ -58,7 +58,12 @@ impl ExpandExtends {
                         item
                     })
                     .collect::<Vec<_>>();
+                let parent_description = parent.description.clone();
                 let block = ir.blocks.get_mut(&name.clone()).unwrap();
+
+                if block.description.is_none() {
+                    block.description = parent_description;
+                }
 
                 for i in items {
                     if !block.items.iter().any(|j| j.name == i.name) {
@@ -118,13 +123,15 @@ impl ExpandExtends {
         }
 
         for (old, new) in rename_fs.into_iter() {
-            let val = ir.fieldsets.remove(&old).unwrap();
-            ir.fieldsets.insert(new, val);
+            if let Some(val) = ir.fieldsets.remove(&old) {
+                ir.fieldsets.insert(new, val);
+            }
         }
 
         for (old, new) in rename_enum.into_iter() {
-            let val = ir.enums.remove(&old).unwrap();
-            ir.enums.insert(new, val);
+            if let Some(val) = ir.enums.remove(&old) {
+                ir.enums.insert(new, val);
+            }
         }
 
         Ok(())
