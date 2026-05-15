@@ -8,6 +8,7 @@ pub struct ModifyRegisters {
     pub blocks: RegexSet,
     pub registers: RegexSet,
     pub fieldset: Option<String>,
+    pub description: Option<String>,
 }
 
 impl ModifyRegisters {
@@ -26,6 +27,10 @@ impl ModifyRegisters {
 
                 if let Some(fieldset) = &self.fieldset {
                     reg.fieldset = Some(fieldset.clone());
+                }
+
+                if let Some(description) = &self.description {
+                    item.description = Some(description.clone());
                 }
             }
         }
