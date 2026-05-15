@@ -32,16 +32,16 @@ pub fn gen_block(args: GenBlock) -> Result<()> {
         .filter_map(|block| block.extends.clone())
         .collect::<HashSet<_>>();
 
-    for dependency in dependencies.iter() {
-        let data = fs::read(args.input.with_file_name(dependency).with_extension("yaml"))?;
-        let sub_ir: IR = serde_yaml::from_slice(&data)?;
-        if dependencies.contains(sub_ir.blocks.keys().next().unwrap()) {
-            ir.merge(sub_ir);
-            break;
-        }
-    }
+    // for dependency in dependencies.iter() {
+    //     let data = fs::read(args.input.with_file_name(dependency).with_extension("yaml")).context?;
+    //     let sub_ir: IR = serde_yaml::from_slice(&data)?;
+    //     if dependencies.contains(sub_ir.blocks.keys().next().unwrap()) {
+    //         ir.merge(sub_ir);
+    //         break;
+    //     }
+    // }
 
-    crate::transform::expand_extends::ExpandExtends {}.run(&mut ir)?;
+    // crate::transform::expand_extends::ExpandExtends {}.run(&mut ir)?;
 
     // Ensure consistent sort order in the YAML.
     crate::transform::sort::Sort {}.run(&mut ir)?;
